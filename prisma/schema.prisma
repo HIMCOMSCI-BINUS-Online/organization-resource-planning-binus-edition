@@ -1,0 +1,216 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  permissions Json     @default("[]")
+  createdAt   DateTime @default(now())
+  users       User[]
+}
+
+model User {
+  id           String   @id @default(cuid())
+  memberId     String   @unique
+  name         String
+  email        String   @unique
+  passwordHash String
+  avatarUrl    String?
+  phone        String?
+  division     String?
+  batch        String?
+  bio          String?
+  isActive     Boolean  @default(true)
+  roleId       String
+  role         Role     @relation(fields: [roleId], references: [id])
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  ledgerEntries  LedgerEntry[]
+  tasksAssigned  Task[]         @relation("TaskAssignee")
+  tasksCreated   Task[]         @relation("TaskCreator")
+  documents      Document[]
+  announcements  Announcement[]
+  eventsCreated  Event[]        @relation("EventCreator")
+  attendances    Attendance[]
+  pollsCreated   Poll[]         @relation("PollCreator")
+  pollVotes      PollVote[]
+  assetsHeld     Asset[]        @relation("AssetHolder")
+  assetsCreated  Asset[]        @relation("AssetCreator")
+}
+
+model LedgerEntry {
+  id          String          @id @default(cuid())
+  date        DateTime
+  title       String
+  category    String
+  type        LedgerEntryType
+  amount      Int
+  description String?
+  userId      String
+  user        User            @relation(fields: [userId], references: [id])
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+}
+
+enum LedgerEntryType {
+  INCOME
+  EXPENSE
+}
+
+model Task {
+  id          String     @id @default(cuid())
+  title       String
+  description String?
+  status      TaskStatus @default(TODO)
+  priority    Priority   @default(MEDIUM)
+  dueDate     DateTime?
+  assigneeId  String?
+  assignee    User?      @relation("TaskAssignee", fields: [assigneeId], references: [id])
+  creatorId   String
+  creator     User       @relation("TaskCreator", fields: [creatorId], references: [id])
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+}
+
+enum TaskStatus {
+  TODO
+  IN_PROGRESS
+  REVIEW
+  DONE
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+model Document {
+  id        String   @id @default(cuid())
+  title     String
+  slug      String   @unique
+  content   String
+  category  String   @default("General")
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ── Module 7: Announcements ───────────────────────────────────────────────────
+
+model Announcement {
+  id        String    @id @default(cuid())
+  title     String
+  content   String
+  isPinned  Boolean   @default(false)
+  expiresAt DateTime?
+  authorId  String
+  author    User      @relation(fields: [authorId], references: [id])
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+// ── Module 8: Events & Attendance ────────────────────────────────────────────
+
+model Event {
+  id          String       @id @default(cuid())
+  title       String
+  description String?
+  location    String?
+  startDate   DateTime
+  endDate     DateTime?
+  creatorId   String
+  creator     User         @relation("EventCreator", fields: [creatorId], references: [id])
+  attendances Attendance[]
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+}
+
+model Attendance {
+  id        String           @id @default(cuid())
+  eventId   String
+  event     Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User             @relation(fields: [userId], references: [id])
+  status    AttendanceStatus @default(PRESENT)
+  note      String?
+  createdAt DateTime         @default(now())
+
+  @@unique([eventId, userId])
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+  EXCUSED
+}
+
+// ── Module 9: Polls ───────────────────────────────────────────────────────────
+
+model Poll {
+  id               String       @id @default(cuid())
+  title            String
+  description      String?
+  isMultipleChoice Boolean      @default(false)
+  isClosed         Boolean      @default(false)
+  creatorId        String
+  creator          User         @relation("PollCreator", fields: [creatorId], references: [id])
+  options          PollOption[]
+  votes            PollVote[]
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+}
+
+model PollOption {
+  id        String     @id @default(cuid())
+  pollId    String
+  poll      Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  text      String
+  votes     PollVote[]
+  createdAt DateTime   @default(now())
+}
+
+model PollVote {
+  id        String     @id @default(cuid())
+  pollId    String
+  poll      Poll       @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  optionId  String
+  option    PollOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User       @relation(fields: [userId], references: [id])
+  createdAt DateTime   @default(now())
+
+  @@unique([pollId, optionId, userId])
+}
+
+// ── Module 10: Assets ─────────────────────────────────────────────────────────
+
+model Asset {
+  id              String      @id @default(cuid())
+  name            String
+  category        String
+  description     String?
+  serialNumber    String?
+  status          AssetStatus @default(AVAILABLE)
+  currentHolderId String?
+  currentHolder   User?       @relation("AssetHolder", fields: [currentHolderId], references: [id])
+  creatorId       String
+  creator         User        @relation("AssetCreator", fields: [creatorId], references: [id])
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+enum AssetStatus {
+  AVAILABLE
+  IN_USE
+  MAINTENANCE
+  LOST
+}

@@ -1,126 +1,137 @@
 "use client";
 
-import { useRef, useEffect, useActionState } from "react";
-import { X } from "lucide-react";
-import { gsap } from "gsap";
+import { useActionState, useEffect } from "react";
 import { createTask, updateTask } from "@/app/actions/tasks";
 import type { TaskRow, MemberRow } from "@/app/lib/queries";
 import type { FormState } from "@/app/lib/definitions";
-
-const MONO: React.CSSProperties = { fontFamily: "var(--font-mono)" };
-const inputStyle: React.CSSProperties = {
-  width: "100%", background: "transparent", border: "1px solid rgba(255,255,255,0.1)",
-  borderBottom: "1px solid rgba(255,255,255,0.25)", color: "#fff", ...MONO,
-  fontSize: "13px", letterSpacing: "0.04em", padding: "0.7rem 0.65rem", outline: "none",
-};
-const selectStyle: React.CSSProperties = { ...inputStyle, background: "#111", cursor: "pointer" };
+import { AlertCircle } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
 
 export default function TaskModal({
-  task, members, onClose, onSaved,
+  task,
+  members,
+  onClose,
 }: {
   task: TaskRow | null;
   members: MemberRow[];
   onClose: () => void;
-  onSaved: (saved: TaskRow) => void;
 }) {
   const isEdit = !!task;
   const serverAction = isEdit ? updateTask.bind(null, task.id) : createTask;
 
   const [state, formAction, pending] = useActionState<FormState, FormData>(serverAction, undefined);
 
-  const overlayRef = useRef<HTMLDivElement>(null);
-  const modalRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    gsap.fromTo(overlayRef.current, { opacity: 0 }, { opacity: 1, duration: 0.2 });
-    gsap.fromTo(modalRef.current, { y: 32, opacity: 0 }, { y: 0, opacity: 1, duration: 0.4, ease: "power4.out" });
-  }, []);
-
   useEffect(() => {
     if (state?.message === "ok") onClose();
   }, [state, onClose]);
-
-  function close() {
-    gsap.to(modalRef.current, { y: 16, opacity: 0, duration: 0.25, ease: "power2.in", onComplete: onClose });
-    gsap.to(overlayRef.current, { opacity: 0, duration: 0.2 });
-  }
 
   const errors = state?.errors ?? {};
   const defaultDue = task?.dueDate ? new Date(task.dueDate).toISOString().slice(0, 10) : "";
 
   return (
-    <>
-      <div ref={overlayRef} onClick={close} style={{ position: "fixed", inset: 0, zIndex: 200, background: "rgba(0,0,0,0.7)" }} />
-      <div ref={modalRef} style={{ position: "fixed", top: "50%", left: "50%", transform: "translate(-50%,-50%)", zIndex: 201, width: "min(520px,95vw)", maxHeight: "90vh", overflowY: "auto", background: "#000", border: "1px solid rgba(255,255,255,0.1)" }}>
-        <div style={{ padding: "1.25rem 1.5rem", borderBottom: "1px solid rgba(255,255,255,0.07)", display: "flex", justifyContent: "space-between", alignItems: "center", position: "sticky", top: 0, background: "#000" }}>
-          <span style={{ ...MONO, fontSize: "10px", letterSpacing: "0.35em", textTransform: "uppercase", color: "rgba(255,255,255,0.35)" }}>{isEdit ? "Edit Task" : "New Task"}</span>
-          <button onClick={close} style={{ ...MONO, fontSize: "16px", color: "rgba(255,255,255,0.3)", background: "transparent", border: "none", lineHeight: 1 }} onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")} onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.3)")}><X size={16} style={{ display: "block" }} /></button>
-        </div>
+    <Dialog open={true} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="sm:max-w-[520px] max-h-[90vh] overflow-y-auto">
+        <DialogHeader>
+          <DialogTitle>{isEdit ? "Edit Task" : "New Task"}</DialogTitle>
+        </DialogHeader>
 
-        <form action={formAction} style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+        <form action={formAction} className="flex flex-col gap-5 py-4">
           {state?.message && state.message !== "ok" && (
-            <div style={{ ...MONO, fontSize: "12px", color: "rgba(255,80,80,0.9)", border: "1px solid rgba(255,80,80,0.2)", padding: "0.6rem 0.75rem" }}>{state.message}</div>
+            <div className="flex items-start gap-3 p-4 bg-destructive/10 border border-destructive/20 rounded-xl text-destructive text-sm font-medium">
+              <AlertCircle size={18} className="shrink-0 mt-0.5" />
+              <p>{state.message}</p>
+            </div>
           )}
 
           {/* Title */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-            <label htmlFor="title" style={{ ...MONO, fontSize: "9px", letterSpacing: "0.3em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)" }}>Title *</label>
-            <input id="title" name="title" placeholder="Task title..." defaultValue={task?.title} style={inputStyle} onFocus={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.6)")} onBlur={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.25)")} />
-            {errors.title && <span style={{ ...MONO, fontSize: "10px", color: "rgba(255,80,80,0.8)" }}>{errors.title[0]}</span>}
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="title" className="font-mono text-[10px] tracking-widest uppercase text-muted-foreground">Title *</Label>
+            <Input id="title" name="title" placeholder="Task title..." defaultValue={task?.title} className="font-sans" />
+            {errors.title && <span className="font-mono text-[10px] text-destructive">{errors.title[0]}</span>}
           </div>
 
           {/* Description */}
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-            <label htmlFor="description" style={{ ...MONO, fontSize: "9px", letterSpacing: "0.3em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)" }}>Description</label>
-            <textarea id="description" name="description" placeholder="Optional details..." defaultValue={task?.description ?? ""} rows={3} style={{ ...inputStyle, resize: "vertical" }} onFocus={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.6)")} onBlur={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.25)")} />
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="description" className="font-mono text-[10px] tracking-widest uppercase text-muted-foreground">Description</Label>
+            <Textarea id="description" name="description" placeholder="Optional details..." defaultValue={task?.description ?? ""} rows={3} className="font-sans" />
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {/* Status */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-              <label htmlFor="status" style={{ ...MONO, fontSize: "9px", letterSpacing: "0.3em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)" }}>Status</label>
-              <select id="status" name="status" defaultValue={task?.status ?? "TODO"} style={selectStyle}>
-                <option value="TODO">To Do</option>
-                <option value="IN_PROGRESS">In Progress</option>
-                <option value="REVIEW">Review</option>
-                <option value="DONE">Done</option>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="status" className="font-mono text-[10px] tracking-widest uppercase text-muted-foreground">Status</Label>
+              <select 
+                id="status" 
+                name="status" 
+                defaultValue={task?.status ?? "TODO"} 
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 appearance-none font-sans cursor-pointer"
+              >
+                <option value="TODO" className="bg-background text-foreground">To Do</option>
+                <option value="IN_PROGRESS" className="bg-background text-foreground">In Progress</option>
+                <option value="REVIEW" className="bg-background text-foreground">Review</option>
+                <option value="DONE" className="bg-background text-foreground">Done</option>
               </select>
             </div>
             {/* Priority */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-              <label htmlFor="priority" style={{ ...MONO, fontSize: "9px", letterSpacing: "0.3em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)" }}>Priority</label>
-              <select id="priority" name="priority" defaultValue={task?.priority ?? "MEDIUM"} style={selectStyle}>
-                <option value="LOW">Low</option>
-                <option value="MEDIUM">Medium</option>
-                <option value="HIGH">High</option>
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="priority" className="font-mono text-[10px] tracking-widest uppercase text-muted-foreground">Priority</Label>
+              <select 
+                id="priority" 
+                name="priority" 
+                defaultValue={task?.priority ?? "MEDIUM"} 
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 appearance-none font-sans cursor-pointer"
+              >
+                <option value="LOW" className="bg-background text-foreground">Low</option>
+                <option value="MEDIUM" className="bg-background text-foreground">Medium</option>
+                <option value="HIGH" className="bg-background text-foreground">High</option>
               </select>
             </div>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
             {/* Assignee */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-              <label htmlFor="assigneeId" style={{ ...MONO, fontSize: "9px", letterSpacing: "0.3em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)" }}>Assignee</label>
-              <select id="assigneeId" name="assigneeId" defaultValue={task?.assignee?.id ?? ""} style={selectStyle}>
-                <option value="">Unassigned</option>
-                {members.map((m) => <option key={m.id} value={m.id}>{m.name}</option>)}
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="assigneeId" className="font-mono text-[10px] tracking-widest uppercase text-muted-foreground">Assignee</Label>
+              <select 
+                id="assigneeId" 
+                name="assigneeId" 
+                defaultValue={task?.assignee?.id ?? ""} 
+                className="flex h-9 w-full rounded-md border border-input bg-transparent px-3 py-1 text-sm shadow-sm transition-colors file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 appearance-none font-sans cursor-pointer"
+              >
+                <option value="" className="bg-background text-foreground">Unassigned</option>
+                {members.map((m) => <option key={m.id} value={m.id} className="bg-background text-foreground">{m.name}</option>)}
               </select>
             </div>
             {/* Due date */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "0.35rem" }}>
-              <label htmlFor="dueDate" style={{ ...MONO, fontSize: "9px", letterSpacing: "0.3em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)" }}>Due Date</label>
-              <input id="dueDate" name="dueDate" type="date" defaultValue={defaultDue} style={inputStyle} onFocus={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.6)")} onBlur={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.25)")} />
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor="dueDate" className="font-mono text-[10px] tracking-widest uppercase text-muted-foreground">Due Date</Label>
+              <Input id="dueDate" name="dueDate" type="date" defaultValue={defaultDue} className="font-sans" />
             </div>
           </div>
 
-          <div style={{ display: "flex", gap: "0.75rem", paddingTop: "0.5rem" }}>
-            <button type="submit" disabled={pending} style={{ flex: 1, ...MONO, fontSize: "10px", letterSpacing: "0.25em", textTransform: "uppercase", background: pending ? "rgba(255,255,255,0.1)" : "#fff", color: pending ? "rgba(255,255,255,0.3)" : "#000", border: "none", padding: "0.8rem", fontWeight: 700 }}>
+          <DialogFooter className="mt-6 pt-4 border-t">
+            <Button 
+              type="button" 
+              variant="outline"
+              onClick={onClose} 
+              className="font-mono text-xs tracking-wider uppercase font-bold"
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="submit" 
+              disabled={pending} 
+              className="font-mono text-xs tracking-wider uppercase font-bold"
+            >
               {pending ? "Saving..." : isEdit ? "Save Changes" : "Create Task"}
-            </button>
-            <button type="button" onClick={close} style={{ ...MONO, fontSize: "10px", letterSpacing: "0.25em", textTransform: "uppercase", background: "transparent", color: "rgba(255,255,255,0.3)", border: "1px solid rgba(255,255,255,0.1)", padding: "0.8rem 1.25rem" }}>Cancel</button>
-          </div>
+            </Button>
+          </DialogFooter>
         </form>
-      </div>
-    </>
+      </DialogContent>
+    </Dialog>
   );
 }

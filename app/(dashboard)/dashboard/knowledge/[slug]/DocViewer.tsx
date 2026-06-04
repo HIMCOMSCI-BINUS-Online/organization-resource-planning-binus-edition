@@ -1,21 +1,16 @@
 "use client";
 
-import { useRef, useEffect, useState, useTransition } from "react";
-import { ArrowLeft } from "lucide-react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { gsap } from "gsap";
 import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { deleteDocument } from "@/app/actions/documents";
 import type { DocumentFull } from "@/app/lib/queries";
 import DocumentModal from "../DocumentModal";
-
-const cx: React.CSSProperties = {
-  maxWidth: "860px", marginLeft: "auto", marginRight: "auto",
-  paddingLeft: "clamp(1.25rem,4vw,3rem)", paddingRight: "clamp(1.25rem,4vw,3rem)", width: "100%",
-};
-const MONO: React.CSSProperties = { fontFamily: "var(--font-mono)" };
+import { Button, buttonVariants } from "@/components/ui/button";
+import { ArrowLeft, Edit2, Trash2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 
 export default function DocViewer({
   doc,
@@ -27,11 +22,6 @@ export default function DocViewer({
   const router = useRouter();
   const [showEdit, setShowEdit] = useState(false);
   const [deleting, startDelete] = useTransition();
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    gsap.from(containerRef.current, { y: 24, opacity: 0, duration: 0.6, ease: "power4.out" });
-  }, []);
 
   function handleDelete() {
     if (!confirm("Delete this document?")) return;
@@ -42,83 +32,86 @@ export default function DocViewer({
   }
 
   return (
-    <div style={{ position: "relative", zIndex: 10 }}>
-      <div style={cx}>
-        <div ref={containerRef}>
-          {/* Back */}
-          <Link
-            href="/dashboard/knowledge"
-            style={{ ...MONO, fontSize: "10px", letterSpacing: "0.25em", textTransform: "uppercase", color: "rgba(255,255,255,0.25)", textDecoration: "none", display: "inline-flex", alignItems: "center", gap: "0.4rem", marginBottom: "2rem", transition: "color 0.15s" }}
-            onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = "#fff")}
-            onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.color = "rgba(255,255,255,0.25)")}
-          >
-            <ArrowLeft size={14} style={{ display: "inline", verticalAlign: "middle", marginRight: "0.4rem" }} />Knowledge
-          </Link>
+    <div className="p-6 md:p-12 max-w-4xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+      {/* Back */}
+      <Link 
+        href="/dashboard/knowledge"
+        className={buttonVariants({ variant: "ghost" }) + " font-mono text-xs tracking-widest uppercase text-muted-foreground hover:text-foreground mb-4 pl-0"}
+      >
+        <ArrowLeft size={14} className="mr-2" />
+        Knowledge
+      </Link>
 
-          {/* Header */}
-          <div style={{ marginBottom: "2.5rem", paddingBottom: "1.5rem", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-            <p style={{ ...MONO, fontSize: "9px", letterSpacing: "0.35em", textTransform: "uppercase", color: "rgba(255,255,255,0.25)", marginBottom: "0.75rem" }}>{doc.category}</p>
-            <h1 style={{ fontSize: "clamp(1.6rem,3.5vw,2.4rem)", fontWeight: 900, letterSpacing: "-0.03em", color: "#fff", lineHeight: 1.1, marginBottom: "1rem" }}>{doc.title}</h1>
-            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
-              <div style={{ display: "flex", gap: "1.5rem" }}>
-                <span style={{ ...MONO, fontSize: "10px", color: "rgba(255,255,255,0.2)" }}>By {doc.author.name}</span>
-                <span style={{ ...MONO, fontSize: "10px", color: "rgba(255,255,255,0.15)" }}>
-                  Updated {new Date(doc.updatedAt).toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" })}
-                </span>
-              </div>
-              <div style={{ display: "flex", gap: "0.5rem" }}>
-                <button
-                  onClick={() => setShowEdit(true)}
-                  style={{ ...MONO, fontSize: "10px", letterSpacing: "0.2em", textTransform: "uppercase", background: "transparent", color: "rgba(255,255,255,0.3)", border: "1px solid rgba(255,255,255,0.1)", padding: "0.4rem 0.8rem", transition: "all 0.15s" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.color = "#fff"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.4)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.color = "rgba(255,255,255,0.3)"; e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)"; }}
-                >
-                  Edit
-                </button>
-                <button
-                  onClick={handleDelete}
-                  disabled={deleting}
-                  style={{ ...MONO, fontSize: "10px", letterSpacing: "0.2em", textTransform: "uppercase", background: "transparent", color: deleting ? "rgba(255,80,80,0.2)" : "rgba(255,80,80,0.5)", border: "1px solid rgba(255,80,80,0.15)", padding: "0.4rem 0.8rem", transition: "all 0.15s" }}
-                  onMouseEnter={(e) => { if (!deleting) { e.currentTarget.style.color = "rgba(255,80,80,0.9)"; e.currentTarget.style.borderColor = "rgba(255,80,80,0.4)"; } }}
-                  onMouseLeave={(e) => { e.currentTarget.style.color = deleting ? "rgba(255,80,80,0.2)" : "rgba(255,80,80,0.5)"; e.currentTarget.style.borderColor = "rgba(255,80,80,0.15)"; }}
-                >
-                  {deleting ? "Deleting..." : "Delete"}
-                </button>
-              </div>
-            </div>
+      {/* Header */}
+      <div className="pb-8 border-b border-border">
+        <Badge variant="secondary" className="font-mono text-[10px] tracking-widest uppercase mb-4">
+          {doc.category}
+        </Badge>
+        <h1 className="text-3xl md:text-5xl font-black tracking-tight leading-tight mb-6">
+          {doc.title}
+        </h1>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex flex-wrap gap-4 items-center">
+            <span className="font-mono text-xs text-muted-foreground">
+              By {doc.author.name}
+            </span>
+            <span className="font-mono text-xs text-muted-foreground opacity-75">
+              Updated {new Date(doc.updatedAt).toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" })}
+            </span>
           </div>
-
-          {/* Markdown body */}
-          <div style={{ color: "rgba(255,255,255,0.8)", lineHeight: 1.8, fontSize: "14px" }}>
-            <ReactMarkdown
-              remarkPlugins={[remarkGfm]}
-              components={{
-                h1: ({ children }) => <h1 style={{ fontSize: "1.6rem", fontWeight: 800, letterSpacing: "-0.03em", color: "#fff", marginTop: "2rem", marginBottom: "0.75rem", lineHeight: 1.2 }}>{children}</h1>,
-                h2: ({ children }) => <h2 style={{ fontSize: "1.25rem", fontWeight: 700, letterSpacing: "-0.02em", color: "#fff", marginTop: "1.75rem", marginBottom: "0.6rem", lineHeight: 1.3 }}>{children}</h2>,
-                h3: ({ children }) => <h3 style={{ fontSize: "1rem", fontWeight: 700, color: "rgba(255,255,255,0.85)", marginTop: "1.5rem", marginBottom: "0.5rem" }}>{children}</h3>,
-                p: ({ children }) => <p style={{ marginBottom: "1rem" }}>{children}</p>,
-                ul: ({ children }) => <ul style={{ paddingLeft: "1.5rem", marginBottom: "1rem" }}>{children}</ul>,
-                ol: ({ children }) => <ol style={{ paddingLeft: "1.5rem", marginBottom: "1rem" }}>{children}</ol>,
-                li: ({ children }) => <li style={{ marginBottom: "0.3rem" }}>{children}</li>,
-                blockquote: ({ children }) => <blockquote style={{ borderLeft: "3px solid rgba(255,255,255,0.15)", paddingLeft: "1rem", marginLeft: 0, color: "rgba(255,255,255,0.4)", fontStyle: "italic" }}>{children}</blockquote>,
-                code: ({ children, className }) => {
-                  const isBlock = className?.startsWith("language-");
-                  return isBlock
-                    ? <code style={{ display: "block", background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.08)", padding: "1rem 1.25rem", fontFamily: "var(--font-mono)", fontSize: "12px", overflowX: "auto", marginBottom: "1rem", lineHeight: 1.6 }}>{children}</code>
-                    : <code style={{ fontFamily: "var(--font-mono)", fontSize: "12px", background: "rgba(255,255,255,0.07)", padding: "0.1em 0.4em", color: "rgba(255,255,255,0.85)" }}>{children}</code>;
-                },
-                pre: ({ children }) => <pre style={{ marginBottom: "1rem" }}>{children}</pre>,
-                hr: () => <hr style={{ border: "none", borderTop: "1px solid rgba(255,255,255,0.07)", margin: "2rem 0" }} />,
-                a: ({ href, children }) => <a href={href} style={{ color: "#fff", textDecoration: "underline", textUnderlineOffset: "3px" }}>{children}</a>,
-                table: ({ children }) => <div style={{ overflowX: "auto", marginBottom: "1rem" }}><table style={{ borderCollapse: "collapse", width: "100%", fontFamily: "var(--font-mono)", fontSize: "12px" }}>{children}</table></div>,
-                th: ({ children }) => <th style={{ border: "1px solid rgba(255,255,255,0.1)", padding: "0.5rem 0.75rem", textAlign: "left", color: "rgba(255,255,255,0.5)", textTransform: "uppercase", letterSpacing: "0.1em", fontSize: "10px" }}>{children}</th>,
-                td: ({ children }) => <td style={{ border: "1px solid rgba(255,255,255,0.07)", padding: "0.5rem 0.75rem" }}>{children}</td>,
-              }}
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowEdit(true)}
+              className="font-mono text-[10px] tracking-widest uppercase"
             >
-              {doc.content}
-            </ReactMarkdown>
+              <Edit2 size={12} className="mr-2" />
+              Edit
+            </Button>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleDelete}
+              disabled={deleting}
+              className="font-mono text-[10px] tracking-widest uppercase"
+            >
+              <Trash2 size={12} className="mr-2" />
+              {deleting ? "Deleting..." : "Delete"}
+            </Button>
           </div>
         </div>
+      </div>
+
+      {/* Markdown body */}
+      <div className="prose prose-zinc dark:prose-invert max-w-none prose-headings:font-bold prose-h1:text-3xl prose-h2:text-2xl prose-h3:text-xl prose-a:text-primary prose-a:underline-offset-4 prose-p:leading-relaxed prose-pre:bg-muted prose-pre:border prose-pre:border-border">
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            h1: ({ children }) => <h1 className="text-3xl font-black tracking-tight mt-10 mb-4">{children}</h1>,
+            h2: ({ children }) => <h2 className="text-2xl font-bold tracking-tight mt-8 mb-4 border-b border-border/50 pb-2">{children}</h2>,
+            h3: ({ children }) => <h3 className="text-xl font-semibold tracking-tight mt-6 mb-3">{children}</h3>,
+            p: ({ children }) => <p className="leading-relaxed mb-4 text-muted-foreground">{children}</p>,
+            ul: ({ children }) => <ul className="list-disc pl-6 mb-4 space-y-1 text-muted-foreground">{children}</ul>,
+            ol: ({ children }) => <ol className="list-decimal pl-6 mb-4 space-y-1 text-muted-foreground">{children}</ol>,
+            li: ({ children }) => <li>{children}</li>,
+            blockquote: ({ children }) => <blockquote className="border-l-4 border-primary/50 pl-4 italic my-4 text-muted-foreground">{children}</blockquote>,
+            code: ({ children, className }) => {
+              const isBlock = className?.startsWith("language-");
+              return isBlock
+                ? <code className="block bg-muted border border-border rounded-lg p-4 font-mono text-sm overflow-x-auto mb-4">{children}</code>
+                : <code className="bg-muted px-1.5 py-0.5 rounded font-mono text-sm text-foreground">{children}</code>;
+            },
+            pre: ({ children }) => <pre className="mb-4">{children}</pre>,
+            hr: () => <hr className="my-8 border-border" />,
+            a: ({ href, children }) => <a href={href} className="text-primary underline underline-offset-4 hover:opacity-80 transition-opacity">{children}</a>,
+            table: ({ children }) => <div className="overflow-x-auto mb-4"><table className="w-full text-sm font-mono border-collapse">{children}</table></div>,
+            th: ({ children }) => <th className="border border-border p-2 text-left bg-muted/50 text-muted-foreground tracking-wider uppercase text-xs">{children}</th>,
+            td: ({ children }) => <td className="border border-border p-2 text-muted-foreground">{children}</td>,
+          }}
+        >
+          {doc.content}
+        </ReactMarkdown>
       </div>
 
       {showEdit && (

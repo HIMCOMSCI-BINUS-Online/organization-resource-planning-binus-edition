@@ -1,17 +1,15 @@
 "use client";
 
-import { useRef, useEffect, useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { gsap } from "gsap";
 import Link from "next/link";
 import type { DocumentRow } from "@/app/lib/queries";
 import DocumentModal from "./DocumentModal";
-
-const cx: React.CSSProperties = {
-  maxWidth: "1280px", marginLeft: "auto", marginRight: "auto",
-  paddingLeft: "clamp(1.25rem,4vw,3rem)", paddingRight: "clamp(1.25rem,4vw,3rem)", width: "100%",
-};
-const MONO: React.CSSProperties = { fontFamily: "var(--font-mono)" };
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Search, Plus, FileText } from "lucide-react";
 
 export default function KnowledgeClient({
   docs,
@@ -30,24 +28,11 @@ export default function KnowledgeClient({
   const [showModal, setShowModal] = useState(false);
   const [, startTransition] = useTransition();
 
-  const headerRef = useRef<HTMLDivElement>(null);
-  const gridRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
-    tl.from(headerRef.current, { y: 24, opacity: 0, duration: 0.7 })
-      .from(
-        gridRef.current ? Array.from(gridRef.current.children) : [],
-        { y: 18, opacity: 0, stagger: 0.05, duration: 0.45 },
-        "-=0.4"
-      );
-  }, []);
-
   useEffect(() => {
     const t = setTimeout(() => {
       const params = new URLSearchParams();
       if (search) params.set("search", search);
-      if (category) params.set("category", category);
+      if (category && category !== "ALL") params.set("category", category);
       startTransition(() => {
         router.push(`/dashboard/knowledge?${params.toString()}`);
       });
@@ -56,62 +41,73 @@ export default function KnowledgeClient({
   }, [search, category, router]);
 
   return (
-    <div style={{ position: "relative", zIndex: 10 }}>
-      <div style={cx}>
-        {/* Header */}
-        <div ref={headerRef} style={{ marginBottom: "2rem", display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
-          <div>
-            <h1 style={{ fontSize: "clamp(1.8rem,4vw,2.8rem)", fontWeight: 900, letterSpacing: "-0.04em", color: "#fff", lineHeight: 1 }}>Knowledge</h1>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
-            <span style={{ ...MONO, fontSize: "10px", letterSpacing: "0.2em", color: "rgba(255,255,255,0.2)" }}>{docs.length} docs</span>
-            <button
-              onClick={() => setShowModal(true)}
-              style={{ ...MONO, fontSize: "10px", letterSpacing: "0.25em", textTransform: "uppercase", color: "#000", background: "#fff", border: "none", padding: "0.65rem 1.25rem", fontWeight: 700, transition: "opacity 0.2s" }}
-              onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
-              onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
-            >
-              + New Doc
-            </button>
-          </div>
+    <div className="p-6 md:p-12 max-w-7xl mx-auto space-y-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <p className="font-mono text-xs tracking-widest uppercase text-muted-foreground mb-2">
+            ◆ Module 6
+          </p>
+          <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-none">
+            Knowledge Base
+          </h1>
         </div>
+        <div className="flex items-center gap-4">
+          <span className="font-mono text-xs tracking-wider text-muted-foreground">
+            {docs.length} docs
+          </span>
+          <Button
+            onClick={() => setShowModal(true)}
+            className="gap-2 font-mono uppercase tracking-wider text-xs"
+          >
+            <Plus size={16} />
+            New Doc
+          </Button>
+        </div>
+      </div>
 
-        {/* Filters */}
-        <div style={{ display: "flex", gap: "0.75rem", marginBottom: "1.5rem", flexWrap: "wrap" }}>
-          <input
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <div className="relative flex-1 max-w-md">
+          <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            type="text"
+            placeholder="Search docs..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search docs..."
-            style={{ ...MONO, flex: "1 1 220px", minWidth: 0, background: "transparent", border: "1px solid rgba(255,255,255,0.1)", borderBottom: "1px solid rgba(255,255,255,0.25)", color: "#fff", fontSize: "12px", letterSpacing: "0.04em", padding: "0.6rem 0.75rem", outline: "none" }}
-            onFocus={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.6)")}
-            onBlur={(e) => (e.currentTarget.style.borderBottomColor = "rgba(255,255,255,0.25)")}
+            className="pl-9 font-mono"
           />
-          <select
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            style={{ ...MONO, background: "#111", border: "1px solid rgba(255,255,255,0.1)", borderBottom: "1px solid rgba(255,255,255,0.25)", color: category ? "#fff" : "rgba(255,255,255,0.3)", fontSize: "12px", letterSpacing: "0.04em", padding: "0.6rem 0.75rem", outline: "none", cursor: "pointer" }}
-          >
-            <option value="">All Categories</option>
-            {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-          </select>
         </div>
-
-        {/* Grid */}
-        {docs.length === 0 ? (
-          <div style={{ ...MONO, fontSize: "12px", color: "rgba(255,255,255,0.15)", textAlign: "center", padding: "4rem 0", letterSpacing: "0.1em" }}>
-            No documents found.
-          </div>
-        ) : (
-          <div
-            ref={gridRef}
-            style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: "1px", background: "rgba(255,255,255,0.07)" }}
-          >
-            {docs.map((doc) => (
-              <DocCard key={doc.id} doc={doc} />
+        <Select 
+          value={category || "ALL"} 
+          onValueChange={(val) => setCategory(val === "ALL" || !val ? "" : val)}
+        >
+          <SelectTrigger className="w-full sm:w-[200px] font-mono">
+            <SelectValue placeholder="All Categories" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All Categories</SelectItem>
+            {categories.map((c) => (
+              <SelectItem key={c} value={c}>{c}</SelectItem>
             ))}
-          </div>
-        )}
+          </SelectContent>
+        </Select>
       </div>
+
+      {/* Grid */}
+      {docs.length === 0 ? (
+        <div className="p-12 text-center border border-dashed rounded-xl">
+          <p className="font-mono text-sm text-muted-foreground tracking-wider">
+            No documents found.
+          </p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+          {docs.map((doc) => (
+            <DocCard key={doc.id} doc={doc} />
+          ))}
+        </div>
+      )}
 
       {showModal && (
         <DocumentModal
@@ -125,32 +121,31 @@ export default function KnowledgeClient({
 }
 
 function DocCard({ doc }: { doc: DocumentRow }) {
-  const ref = useRef<HTMLAnchorElement>(null);
-  useEffect(() => {
-    if (ref.current) {
-      gsap.fromTo(ref.current, { opacity: 0, y: -8 }, { opacity: 1, y: 0, duration: 0.3, ease: "power3.out" });
-    }
-  }, []);
-
   return (
-    <Link
-      ref={ref}
-      href={`/dashboard/knowledge/${doc.slug}`}
-      style={{
-        display: "block", background: "#000", padding: "1.5rem", textDecoration: "none",
-        borderTop: "1px solid rgba(255,255,255,0.07)", transition: "background 0.15s",
-      }}
-      onMouseEnter={(e) => ((e.currentTarget as HTMLAnchorElement).style.background = "rgba(255,255,255,0.03)")}
-      onMouseLeave={(e) => ((e.currentTarget as HTMLAnchorElement).style.background = "#000")}
-    >
-      <p style={{ ...MONO, fontSize: "9px", letterSpacing: "0.3em", textTransform: "uppercase", color: "rgba(255,255,255,0.25)", marginBottom: "0.6rem" }}>{doc.category}</p>
-      <p style={{ fontSize: "14px", fontWeight: 700, color: "#fff", letterSpacing: "-0.01em", lineHeight: 1.4, marginBottom: "0.75rem" }}>{doc.title}</p>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <span style={{ ...MONO, fontSize: "9px", color: "rgba(255,255,255,0.2)" }}>{doc.author.name.split(" ")[0]}</span>
-        <span style={{ ...MONO, fontSize: "9px", color: "rgba(255,255,255,0.2)" }}>
-          {new Date(doc.updatedAt).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "2-digit" })}
-        </span>
-      </div>
+    <Link href={`/dashboard/knowledge/${doc.slug}`} className="block h-full outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-xl">
+      <Card className="h-full flex flex-col hover:border-primary/50 transition-colors shadow-sm cursor-pointer overflow-hidden group">
+        <CardHeader className="p-5 pb-3">
+          <div className="flex items-start justify-between mb-2">
+            <span className="font-mono text-[9px] tracking-widest uppercase text-muted-foreground group-hover:text-primary transition-colors">
+              {doc.category}
+            </span>
+            <FileText size={14} className="text-muted-foreground opacity-50" />
+          </div>
+          <p className="text-base font-bold leading-tight line-clamp-2">
+            {doc.title}
+          </p>
+        </CardHeader>
+        <CardContent className="p-5 pt-0 mt-auto">
+          <div className="flex justify-between items-center pt-4 border-t border-border/50">
+            <span className="font-mono text-[10px] text-muted-foreground">
+              {doc.author.name.split(" ")[0]}
+            </span>
+            <span className="font-mono text-[10px] text-muted-foreground">
+              {new Date(doc.updatedAt).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}
+            </span>
+          </div>
+        </CardContent>
+      </Card>
     </Link>
   );
 }

@@ -1,29 +1,25 @@
 "use client";
 
-import { useRef, useEffect, useState, useTransition } from "react";
-import { Pencil, X } from "lucide-react";
-import { gsap } from "gsap";
+import { useEffect, useState, useTransition } from "react";
 import { moveTask, deleteTask } from "@/app/actions/tasks";
 import type { KanbanBoard, TaskRow, MemberRow } from "@/app/lib/queries";
 import TaskModal from "./TaskModal";
-
-const cx: React.CSSProperties = {
-  maxWidth: "1280px", marginLeft: "auto", marginRight: "auto",
-  paddingLeft: "clamp(1.25rem,4vw,3rem)", paddingRight: "clamp(1.25rem,4vw,3rem)", width: "100%",
-};
-const MONO: React.CSSProperties = { fontFamily: "var(--font-mono)" };
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { CalendarDays, Edit2, Plus, Trash2 } from "lucide-react";
 
 const COLUMNS: { status: TaskRow["status"]; label: string; color: string }[] = [
-  { status: "TODO",        label: "To Do",       color: "rgba(255,255,255,0.25)" },
-  { status: "IN_PROGRESS", label: "In Progress", color: "rgba(255,200,80,0.7)" },
-  { status: "REVIEW",      label: "Review",      color: "rgba(100,180,255,0.7)" },
-  { status: "DONE",        label: "Done",        color: "rgba(140,255,140,0.7)" },
+  { status: "TODO",        label: "To Do",       color: "bg-zinc-300 dark:bg-zinc-700" },
+  { status: "IN_PROGRESS", label: "In Progress", color: "bg-amber-400 dark:bg-amber-500" },
+  { status: "REVIEW",      label: "Review",      color: "bg-blue-400 dark:bg-blue-500" },
+  { status: "DONE",        label: "Done",        color: "bg-emerald-400 dark:bg-emerald-500" },
 ];
 
 const PRIORITY_COLOR: Record<TaskRow["priority"], string> = {
-  HIGH: "rgba(255,100,100,0.8)",
-  MEDIUM: "rgba(255,200,80,0.7)",
-  LOW: "rgba(255,255,255,0.25)",
+  HIGH: "bg-red-500",
+  MEDIUM: "bg-amber-500",
+  LOW: "bg-zinc-400 dark:bg-zinc-600",
 };
 
 export default function KanbanClient({
@@ -34,44 +30,23 @@ export default function KanbanClient({
   members: MemberRow[];
 }) {
   const [board, setBoard] = useState(initialBoard);
-  const [dragging, setDragging] = useState<string | null>(null);
+  useEffect(() => { setBoard(initialBoard); }, [initialBoard]);
   const [dragOver, setDragOver] = useState<TaskRow["status"] | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [editingTask, setEditingTask] = useState<TaskRow | null>(null);
   const [, startTransition] = useTransition();
 
-  const headerRef = useRef<HTMLDivElement>(null);
-  const columnsRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const tl = gsap.timeline({ defaults: { ease: "power4.out" } });
-    tl.from(headerRef.current, { y: 24, opacity: 0, duration: 0.7 })
-      .from(
-        columnsRef.current ? Array.from(columnsRef.current.children) : [],
-        { y: 18, opacity: 0, stagger: 0.08, duration: 0.5 },
-        "-=0.35"
-      );
-  }, []);
-
-  // Animate new card in
-  function animateCard(el: HTMLElement | null) {
-    if (!el) return;
-    gsap.fromTo(el, { opacity: 0, y: -12 }, { opacity: 1, y: 0, duration: 0.35, ease: "power3.out" });
-  }
-
   function handleDragStart(e: React.DragEvent, taskId: string) {
     e.dataTransfer.setData("taskId", taskId);
-    setDragging(taskId);
     if (e.currentTarget instanceof HTMLElement) {
-      gsap.to(e.currentTarget, { opacity: 0.4, scale: 0.97, duration: 0.2 });
+      e.currentTarget.style.opacity = "0.4";
     }
   }
 
   function handleDragEnd(e: React.DragEvent) {
-    setDragging(null);
     setDragOver(null);
     if (e.currentTarget instanceof HTMLElement) {
-      gsap.to(e.currentTarget, { opacity: 1, scale: 1, duration: 0.2 });
+      e.currentTarget.style.opacity = "1";
     }
   }
 
@@ -113,74 +88,78 @@ export default function KanbanClient({
   const totalTasks = Object.values(board).flat().length;
 
   return (
-    <div style={{ position: "relative", zIndex: 10 }}>
-      <div style={cx}>
-        {/* Header */}
-        <div ref={headerRef} style={{ marginBottom: "2rem", display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: "1rem", flexWrap: "wrap" }}>
-          <div>
-            <h1 style={{ fontSize: "clamp(1.8rem,4vw,2.8rem)", fontWeight: 900, letterSpacing: "-0.04em", color: "#fff", lineHeight: 1 }}>Tasks</h1>
-          </div>
-          <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-            <span style={{ ...MONO, fontSize: "10px", letterSpacing: "0.2em", color: "rgba(255,255,255,0.2)" }}>{totalTasks} total</span>
-            <button
-              onClick={() => { setEditingTask(null); setShowModal(true); }}
-              style={{ ...MONO, fontSize: "10px", letterSpacing: "0.25em", textTransform: "uppercase", color: "#000", background: "#fff", border: "none", padding: "0.65rem 1.25rem", fontWeight: 700, transition: "opacity 0.2s" }}
-              onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
-              onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
-            >
-              + New Task
-            </button>
-          </div>
+    <div className="p-6 md:p-12 max-w-[1400px] mx-auto space-y-8">
+      {/* Header */}
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <p className="font-mono text-xs tracking-widest uppercase text-muted-foreground mb-2">
+            ◆ Module 5
+          </p>
+          <h1 className="text-4xl md:text-5xl font-black tracking-tight leading-none">
+            Tasks
+          </h1>
         </div>
+        <div className="flex items-center gap-4">
+          <span className="font-mono text-xs tracking-wider text-muted-foreground">
+            {totalTasks} total
+          </span>
+          <Button
+            onClick={() => { setEditingTask(null); setShowModal(true); }}
+            className="gap-2 font-mono uppercase tracking-wider text-xs"
+          >
+            <Plus size={16} />
+            New Task
+          </Button>
+        </div>
+      </div>
 
-        {/* Board */}
-        <div
-          ref={columnsRef}
-          style={{ display: "grid", gridTemplateColumns: "repeat(4,1fr)", gap: "1rem", alignItems: "start" }}
-        >
-          {COLUMNS.map((col) => (
-            <div
-              key={col.status}
-              onDragOver={(e) => { e.preventDefault(); setDragOver(col.status); }}
-              onDragLeave={() => setDragOver(null)}
-              onDrop={(e) => handleDrop(e, col.status)}
-              style={{
-                background: dragOver === col.status ? "rgba(255,255,255,0.04)" : "rgba(255,255,255,0.02)",
-                border: "1px solid",
-                borderColor: dragOver === col.status ? "rgba(255,255,255,0.2)" : "rgba(255,255,255,0.07)",
-                minHeight: "200px",
-                transition: "all 0.15s",
-              }}
-            >
-              {/* Column header */}
-              <div style={{ padding: "0.85rem 1rem", borderBottom: "1px solid rgba(255,255,255,0.07)", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                <div style={{ display: "flex", alignItems: "center", gap: "0.5rem" }}>
-                  <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: col.color, flexShrink: 0 }} />
-                  <span style={{ ...MONO, fontSize: "10px", letterSpacing: "0.25em", textTransform: "uppercase", color: "rgba(255,255,255,0.5)" }}>{col.label}</span>
-                </div>
-                <span style={{ ...MONO, fontSize: "10px", color: "rgba(255,255,255,0.2)" }}>{board[col.status].length}</span>
+      {/* Board */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-start">
+        {COLUMNS.map((col) => (
+          <div
+            key={col.status}
+            onDragOver={(e) => { e.preventDefault(); setDragOver(col.status); }}
+            onDragLeave={() => setDragOver(null)}
+            onDrop={(e) => handleDrop(e, col.status)}
+            className={`rounded-xl border bg-card text-card-foreground shadow-sm flex flex-col transition-colors min-h-[400px] ${
+              dragOver === col.status ? "border-primary bg-muted/50" : "border-border"
+            }`}
+          >
+            {/* Column header */}
+            <div className="p-4 border-b flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className={`w-2 h-2 rounded-full ${col.color}`} />
+                <span className="font-mono text-[10px] tracking-widest uppercase font-semibold">
+                  {col.label}
+                </span>
               </div>
-
-              {/* Cards */}
-              <div style={{ padding: "0.5rem", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                {board[col.status].map((task) => (
-                  <KanbanCard
-                    key={task.id}
-                    task={task}
-                    onMount={animateCard}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
-                    onEdit={() => openEdit(task)}
-                    onDelete={() => handleDelete(task.id, task.status)}
-                  />
-                ))}
-                {board[col.status].length === 0 && (
-                  <p style={{ ...MONO, fontSize: "10px", color: "rgba(255,255,255,0.1)", textAlign: "center", padding: "1.5rem 0", letterSpacing: "0.1em" }}>Drop here</p>
-                )}
-              </div>
+              <Badge variant="secondary" className="font-mono text-[10px]">
+                {board[col.status].length}
+              </Badge>
             </div>
-          ))}
-        </div>
+
+            {/* Cards */}
+            <div className="p-3 flex flex-col gap-3 flex-1 overflow-y-auto">
+              {board[col.status].map((task) => (
+                <KanbanCard
+                  key={task.id}
+                  task={task}
+                  onDragStart={handleDragStart}
+                  onDragEnd={handleDragEnd}
+                  onEdit={() => openEdit(task)}
+                  onDelete={() => handleDelete(task.id, task.status)}
+                />
+              ))}
+              {board[col.status].length === 0 && (
+                <div className="flex-1 flex items-center justify-center p-8">
+                  <p className="font-mono text-xs text-muted-foreground tracking-wider border border-dashed rounded-lg px-4 py-8 w-full text-center">
+                    Drop here
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        ))}
       </div>
 
       {showModal && (
@@ -188,16 +167,6 @@ export default function KanbanClient({
           task={editingTask}
           members={members}
           onClose={() => { setShowModal(false); setEditingTask(null); }}
-          onSaved={(saved) => {
-            setBoard((prev) => {
-              const newBoard = { ...prev };
-              if (editingTask) {
-                newBoard[editingTask.status] = prev[editingTask.status].filter((t) => t.id !== saved.id);
-              }
-              newBoard[saved.status] = [saved, ...newBoard[saved.status].filter((t) => t.id !== saved.id)];
-              return newBoard;
-            });
-          }}
         />
       )}
     </div>
@@ -205,66 +174,71 @@ export default function KanbanClient({
 }
 
 function KanbanCard({
-  task, onMount, onDragStart, onDragEnd, onEdit, onDelete,
+  task, onDragStart, onDragEnd, onEdit, onDelete,
 }: {
   task: TaskRow;
-  onMount: (el: HTMLElement | null) => void;
   onDragStart: (e: React.DragEvent, id: string) => void;
   onDragEnd: (e: React.DragEvent) => void;
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-  useEffect(() => { onMount(ref.current); }, []);  // eslint-disable-line
-
   const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && task.status !== "DONE";
 
   return (
-    <div
-      ref={ref}
+    <Card
       draggable
       onDragStart={(e) => onDragStart(e, task.id)}
       onDragEnd={onDragEnd}
-      style={{
-        background: "#000",
-        border: "1px solid rgba(255,255,255,0.08)",
-        padding: "0.85rem",
-        cursor: "grab",
-        transition: "border-color 0.15s",
-        userSelect: "none",
-      }}
-      onMouseEnter={(e) => ((e.currentTarget as HTMLDivElement).style.borderColor = "rgba(255,255,255,0.2)")}
-      onMouseLeave={(e) => ((e.currentTarget as HTMLDivElement).style.borderColor = "rgba(255,255,255,0.08)")}
+      className="cursor-grab active:cursor-grabbing hover:border-primary/50 transition-colors shadow-sm"
     >
-      {/* Priority dot + title */}
-      <div style={{ display: "flex", alignItems: "flex-start", gap: "0.5rem", marginBottom: "0.5rem" }}>
-        <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: PRIORITY_COLOR[task.priority], flexShrink: 0, marginTop: "5px" }} />
-        <p style={{ fontSize: "12px", fontWeight: 600, color: "#fff", lineHeight: 1.4, letterSpacing: "-0.01em" }}>{task.title}</p>
-      </div>
-
-      {task.description && (
-        <p style={{ ...MONO, fontSize: "10px", color: "rgba(255,255,255,0.3)", lineHeight: 1.5, marginBottom: "0.5rem", marginLeft: "1rem" }}>{task.description.slice(0, 80)}{task.description.length > 80 ? "…" : ""}</p>
-      )}
-
-      {/* Meta row */}
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginLeft: "1rem" }}>
-        <div style={{ display: "flex", gap: "0.4rem", alignItems: "center" }}>
-          {task.assignee && (
-            <span style={{ ...MONO, fontSize: "9px", letterSpacing: "0.1em", color: "rgba(255,255,255,0.3)", border: "1px solid rgba(255,255,255,0.07)", padding: "0.1rem 0.4rem" }}>
-              {task.assignee.name.split(" ")[0]}
-            </span>
-          )}
-          {task.dueDate && (
-            <span style={{ ...MONO, fontSize: "9px", color: isOverdue ? "rgba(255,100,100,0.8)" : "rgba(255,255,255,0.2)" }}>
-              {new Date(task.dueDate).toLocaleDateString("id-ID", { day: "2-digit", month: "short" })}
-            </span>
-          )}
+      <CardHeader className="p-4 pb-2">
+        <div className="flex items-start gap-2">
+          <span className={`w-1.5 h-1.5 rounded-full mt-1.5 flex-shrink-0 ${PRIORITY_COLOR[task.priority]}`} />
+          <p className="text-sm font-semibold leading-tight break-words">{task.title}</p>
         </div>
-        <div style={{ display: "flex", gap: "0.3rem" }}>
-          <button onClick={onEdit} style={{ ...MONO, fontSize: "9px", color: "rgba(255,255,255,0.2)", background: "transparent", border: "none", padding: "0.15rem 0.3rem", transition: "color 0.15s" }} onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")} onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.2)")}><Pencil size={12} /></button>
-          <button onClick={onDelete} style={{ ...MONO, fontSize: "9px", color: "rgba(255,80,80,0.3)", background: "transparent", border: "none", padding: "0.15rem 0.3rem", transition: "color 0.15s" }} onMouseEnter={(e) => (e.currentTarget.style.color = "rgba(255,80,80,0.9)")} onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,80,80,0.3)")}><X size={12} /></button>
+      </CardHeader>
+      <CardContent className="p-4 pt-0">
+        {task.description && (
+          <p className="font-mono text-[10px] text-muted-foreground leading-relaxed mb-3 line-clamp-2">
+            {task.description}
+          </p>
+        )}
+
+        <div className="flex items-center justify-between mt-4">
+          <div className="flex items-center gap-2">
+            {task.assignee && (
+              <Badge variant="outline" className="font-mono text-[9px] tracking-widest px-1.5 py-0">
+                {task.assignee.name.split(" ")[0]}
+              </Badge>
+            )}
+            {task.dueDate && (
+              <div className={`flex items-center gap-1 font-mono text-[9px] ${isOverdue ? "text-red-500 font-bold" : "text-muted-foreground"}`}>
+                <CalendarDays size={10} />
+                {new Date(task.dueDate).toLocaleDateString("id-ID", { day: "2-digit", month: "short" })}
+              </div>
+            )}
+          </div>
+          
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 text-muted-foreground hover:text-primary"
+              onClick={onEdit}
+            >
+              <Edit2 size={10} />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+              onClick={onDelete}
+            >
+              <Trash2 size={10} />
+            </Button>
+          </div>
         </div>
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }

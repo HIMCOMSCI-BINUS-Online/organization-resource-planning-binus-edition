@@ -1,23 +1,27 @@
 "use client";
 
-import { useRef, useEffect } from "react";
-import { X } from "lucide-react";
-import { gsap } from "gsap";
 import { toggleMemberActive } from "@/app/actions/members";
 import type { MemberRow } from "@/app/lib/queries";
 import { useTransition, useState } from "react";
+import { Edit2, Shield, User, Clock, Phone, Mail, FileText } from "lucide-react";
+import AddEditMemberModal from "./AddEditMemberModal";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription, SheetFooter } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
-const MONO: React.CSSProperties = { fontFamily: "var(--font-mono)" };
-
-function DetailField({ label, value }: { label: string; value: string | null | undefined }) {
+function DetailField({ label, value, icon: Icon }: { label: string; value: string | null | undefined; icon?: React.ElementType }) {
   return (
-    <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
-      <span style={{ ...MONO, fontSize: "9px", letterSpacing: "0.3em", textTransform: "uppercase", color: "rgba(255,255,255,0.25)" }}>
-        {label}
-      </span>
-      <span style={{ fontSize: "13px", color: value ? "rgba(255,255,255,0.75)" : "rgba(255,255,255,0.2)", letterSpacing: "0.01em" }}>
-        {value ?? "—"}
-      </span>
+    <div className="flex items-start gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors">
+      {Icon && <Icon className="text-muted-foreground mt-0.5" size={16} />}
+      <div className="flex flex-col gap-1">
+        <span className="font-mono text-[10px] tracking-widest uppercase text-muted-foreground">
+          {label}
+        </span>
+        <span className={`text-sm ${value ? "text-foreground" : "text-muted-foreground"}`}>
+          {value ?? "—"}
+        </span>
+      </div>
     </div>
   );
 }
@@ -33,33 +37,8 @@ export default function MemberPanel({
   onClose: () => void;
   onUpdated: (m: MemberRow) => void;
 }) {
-  const panelRef = useRef<HTMLDivElement>(null);
-  const overlayRef = useRef<HTMLDivElement>(null);
   const [isPending, startTransition] = useTransition();
   const [showEditModal, setShowEditModal] = useState(false);
-
-  useEffect(() => {
-    gsap.fromTo(
-      overlayRef.current,
-      { opacity: 0 },
-      { opacity: 1, duration: 0.25, ease: "none" }
-    );
-    gsap.fromTo(
-      panelRef.current,
-      { x: "100%" },
-      { x: "0%", duration: 0.45, ease: "power4.out" }
-    );
-  }, []);
-
-  function close() {
-    gsap.to(panelRef.current, {
-      x: "100%",
-      duration: 0.35,
-      ease: "power3.in",
-      onComplete: onClose,
-    });
-    gsap.to(overlayRef.current, { opacity: 0, duration: 0.25 });
-  }
 
   function handleToggleActive() {
     startTransition(async () => {
@@ -70,213 +49,92 @@ export default function MemberPanel({
 
   return (
     <>
-      {/* Overlay */}
-      <div
-        ref={overlayRef}
-        onClick={close}
-        style={{
-          position: "fixed",
-          inset: 0,
-          zIndex: 100,
-          background: "rgba(0,0,0,0.6)",
-        }}
-      />
+      <Sheet open={true} onOpenChange={(open) => !open && onClose()}>
+        <SheetContent className="w-full sm:max-w-md flex flex-col p-0">
+          <SheetHeader className="px-6 py-4 border-b">
+            <SheetTitle>Member Profile</SheetTitle>
+            <SheetDescription className="sr-only">Detailed view of member information.</SheetDescription>
+          </SheetHeader>
 
-      {/* Panel */}
-      <div
-        ref={panelRef}
-        style={{
-          position: "fixed",
-          top: 0,
-          right: 0,
-          bottom: 0,
-          width: "min(480px, 95vw)",
-          zIndex: 101,
-          background: "#000",
-          borderLeft: "1px solid rgba(255,255,255,0.1)",
-          display: "flex",
-          flexDirection: "column",
-          overflowY: "auto",
-        }}
-      >
-        {/* Panel header */}
-        <div
-          style={{
-            padding: "1.25rem 1.5rem",
-            borderBottom: "1px solid rgba(255,255,255,0.07)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "space-between",
-            position: "sticky",
-            top: 0,
-            background: "#000",
-            zIndex: 1,
-          }}
-        >
-          <span style={{ ...MONO, fontSize: "10px", letterSpacing: "0.35em", textTransform: "uppercase", color: "rgba(255,255,255,0.3)" }}>
-            Member Profile
-          </span>
-          <button
-            onClick={close}
-            style={{
-              ...MONO,
-              fontSize: "16px",
-              color: "rgba(255,255,255,0.3)",
-              background: "transparent",
-              border: "none",
-              lineHeight: 1,
-              transition: "color 0.15s",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
-            onMouseLeave={(e) => (e.currentTarget.style.color = "rgba(255,255,255,0.3)")}
-            aria-label="Close"
-          >
-            <X size={16} style={{ display: "block" }} />
-          </button>
-        </div>
+          {/* Avatar / name block */}
+          <div className="px-6 py-8 border-b bg-muted/20">
+            <Avatar className="w-20 h-20 mb-5 border">
+              {member.avatarUrl && <AvatarImage src={member.avatarUrl} alt={member.name} />}
+              <AvatarFallback className="text-2xl font-black text-muted-foreground bg-muted">
+                {member.name.charAt(0).toUpperCase()}
+              </AvatarFallback>
+            </Avatar>
 
-        {/* Avatar / name block */}
-        <div style={{ padding: "2rem 1.5rem", borderBottom: "1px solid rgba(255,255,255,0.07)" }}>
-          <div
-            style={{
-              width: "56px",
-              height: "56px",
-              borderRadius: "50%",
-              background: "rgba(255,255,255,0.07)",
-              border: "1px solid rgba(255,255,255,0.12)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              marginBottom: "1rem",
-              fontSize: "1.3rem",
-              fontWeight: 900,
-              color: "rgba(255,255,255,0.5)",
-              letterSpacing: "-0.02em",
-              flexShrink: 0,
-            }}
-          >
-            {member.avatarUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={member.avatarUrl} alt="" style={{ width: "100%", height: "100%", borderRadius: "50%", objectFit: "cover" }} />
-            ) : (
-              member.name.charAt(0).toUpperCase()
-            )}
-          </div>
-
-          <h2 style={{ fontSize: "1.4rem", fontWeight: 900, letterSpacing: "-0.03em", color: "#fff", marginBottom: "0.25rem" }}>
-            {member.name}
-          </h2>
-          <p style={{ ...MONO, fontSize: "11px", color: "rgba(255,255,255,0.3)", letterSpacing: "0.1em", marginBottom: "0.75rem" }}>
-            {member.memberId}
-          </p>
-
-          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-            <span
-              style={{
-                ...MONO,
-                fontSize: "9px",
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                color: member.role.name === "Super Admin" ? "#fff" : "rgba(255,255,255,0.4)",
-                border: "1px solid",
-                borderColor: member.role.name === "Super Admin" ? "rgba(255,255,255,0.3)" : "rgba(255,255,255,0.1)",
-                padding: "0.2rem 0.5rem",
-              }}
-            >
-              {member.role.name}
-            </span>
-            <span
-              style={{
-                ...MONO,
-                fontSize: "9px",
-                letterSpacing: "0.2em",
-                textTransform: "uppercase",
-                color: member.isActive ? "rgba(180,255,180,0.7)" : "rgba(255,255,255,0.2)",
-                border: "1px solid",
-                borderColor: member.isActive ? "rgba(140,255,140,0.2)" : "rgba(255,255,255,0.07)",
-                padding: "0.2rem 0.5rem",
-              }}
-            >
-              {member.isActive ? "Active" : "Inactive"}
-            </span>
-          </div>
-        </div>
-
-        {/* Details */}
-        <div style={{ padding: "1.5rem", display: "flex", flexDirection: "column", gap: "1.25rem", flex: 1 }}>
-          <DetailField label="Email" value={member.email} />
-          <DetailField label="Phone" value={member.phone} />
-          <DetailField label="Division" value={member.division} />
-          <DetailField label="Batch" value={member.batch} />
-          <div style={{ display: "flex", flexDirection: "column", gap: "0.3rem" }}>
-            <span style={{ ...MONO, fontSize: "9px", letterSpacing: "0.3em", textTransform: "uppercase", color: "rgba(255,255,255,0.25)" }}>
-              Bio
-            </span>
-            <p style={{ fontSize: "13px", color: member.bio ? "rgba(255,255,255,0.65)" : "rgba(255,255,255,0.2)", lineHeight: 1.6 }}>
-              {member.bio ?? "—"}
+            <h2 className="text-2xl font-black tracking-tight mb-1">
+              {member.name}
+            </h2>
+            <p className="font-mono text-xs text-muted-foreground tracking-wider mb-4">
+              {member.memberId}
             </p>
-          </div>
-          <DetailField
-            label="Member Since"
-            value={new Date(member.createdAt).toLocaleDateString("id-ID", {
-              day: "numeric",
-              month: "long",
-              year: "numeric",
-            })}
-          />
-        </div>
 
-        {/* Actions */}
-        <div
-          style={{
-            padding: "1.25rem 1.5rem",
-            borderTop: "1px solid rgba(255,255,255,0.07)",
-            display: "flex",
-            gap: "0.75rem",
-          }}
-        >
-          <button
-            onClick={() => setShowEditModal(true)}
-            style={{
-              flex: 1,
-              ...MONO,
-              fontSize: "10px",
-              letterSpacing: "0.25em",
-              textTransform: "uppercase",
-              background: "#fff",
-              color: "#000",
-              border: "none",
-              padding: "0.7rem",
-              fontWeight: 700,
-              transition: "opacity 0.2s",
-            }}
-            onMouseEnter={(e) => (e.currentTarget.style.opacity = "0.85")}
-            onMouseLeave={(e) => (e.currentTarget.style.opacity = "1")}
-          >
-            Edit
-          </button>
-          <button
-            onClick={handleToggleActive}
-            disabled={isPending}
-            style={{
-              flex: 1,
-              ...MONO,
-              fontSize: "10px",
-              letterSpacing: "0.25em",
-              textTransform: "uppercase",
-              background: "transparent",
-              color: member.isActive ? "rgba(255,100,100,0.8)" : "rgba(140,255,140,0.7)",
-              border: "1px solid",
-              borderColor: member.isActive ? "rgba(255,100,100,0.2)" : "rgba(140,255,140,0.2)",
-              padding: "0.7rem",
-              transition: "all 0.2s",
-              opacity: isPending ? 0.5 : 1,
-            }}
-          >
-            {member.isActive ? "Deactivate" : "Activate"}
-          </button>
-        </div>
-      </div>
+            <div className="flex gap-2 flex-wrap">
+              <Badge variant={member.role.name === "Super Admin" ? "default" : "secondary"} className="font-mono text-[10px] tracking-widest uppercase">
+                {member.role.name}
+              </Badge>
+              <Badge variant={member.isActive ? "outline" : "secondary"} className="font-mono text-[10px] tracking-widest uppercase gap-1.5">
+                <span className={`w-1.5 h-1.5 rounded-full ${member.isActive ? "bg-emerald-500" : "bg-muted-foreground"}`} />
+                {member.isActive ? "Active" : "Inactive"}
+              </Badge>
+            </div>
+          </div>
+
+          {/* Details */}
+          <div className="p-3 flex flex-col flex-1 overflow-y-auto">
+            <DetailField label="Email" value={member.email} icon={Mail} />
+            <DetailField label="Phone" value={member.phone} icon={Phone} />
+            <DetailField label="Division" value={member.division} icon={User} />
+            <DetailField label="Batch" value={member.batch} icon={Shield} />
+            
+            <div className="flex items-start gap-3 p-3 rounded-lg mt-2">
+              <FileText className="text-muted-foreground mt-0.5 shrink-0" size={16} />
+              <div className="flex flex-col gap-1">
+                <span className="font-mono text-[10px] tracking-widest uppercase text-muted-foreground">
+                  Bio
+                </span>
+                <p className={`text-sm leading-relaxed ${member.bio ? "text-foreground" : "text-muted-foreground"}`}>
+                  {member.bio ?? "—"}
+                </p>
+              </div>
+            </div>
+
+            <DetailField
+              label="Member Since"
+              value={new Date(member.createdAt).toLocaleDateString("id-ID", {
+                day: "numeric",
+                month: "long",
+                year: "numeric",
+              })}
+              icon={Clock}
+            />
+          </div>
+
+          {/* Actions */}
+          <SheetFooter className="p-6 border-t bg-muted/10 sm:justify-start">
+            <div className="flex w-full gap-3">
+              <Button
+                onClick={() => setShowEditModal(true)}
+                className="flex-1 font-mono text-xs tracking-wider uppercase font-bold"
+              >
+                <Edit2 className="mr-2" size={14} />
+                Edit Profile
+              </Button>
+              <Button
+                variant={member.isActive ? "destructive" : "outline"}
+                onClick={handleToggleActive}
+                disabled={isPending}
+                className="flex-1 font-mono text-xs tracking-wider uppercase font-bold"
+              >
+                {member.isActive ? "Deactivate" : "Activate"}
+              </Button>
+            </div>
+          </SheetFooter>
+        </SheetContent>
+      </Sheet>
 
       {showEditModal && (
         <EditMemberModal
@@ -289,8 +147,6 @@ export default function MemberPanel({
     </>
   );
 }
-
-import AddEditMemberModal from "./AddEditMemberModal";
 
 function EditMemberModal({
   member,

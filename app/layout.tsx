@@ -48,6 +48,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { ThemeProvider } from "@/app/components/ThemeProvider";
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -57,9 +59,17 @@ export default function RootLayout({
     <html
       lang="en"
       className={` `} style={{ height: "100%" }}
+      suppressHydrationWarning
     >
       <body style={{ minHeight: "100%", background: "#000", color: "#fff", overflowX: "hidden" }}>
-        {children}
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="dark"
+          enableSystem
+          disableTransitionOnChange
+        >
+          {children}
+        </ThemeProvider>
       </body>
     </html>
   );

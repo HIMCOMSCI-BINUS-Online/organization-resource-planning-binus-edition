@@ -1,73 +1,50 @@
-const cx: React.CSSProperties = {
-  maxWidth: "1280px",
-  marginLeft: "auto",
-  marginRight: "auto",
-  paddingLeft: "clamp(1.25rem, 4vw, 3rem)",
-  paddingRight: "clamp(1.25rem, 4vw, 3rem)",
-  width: "100%",
-};
-
-function Shimmer({ width, height, style }: { width?: string; height: string; style?: React.CSSProperties }) {
-  return (
-    <div
-      style={{
-        height,
-        width: width ?? "100%",
-        background: "rgba(255,255,255,0.06)",
-        position: "relative",
-        overflow: "hidden",
-        ...style,
-      }}
-    >
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          background: "linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.04) 50%, transparent 100%)",
-          animation: "shimmer 1.6s infinite",
-        }}
-      />
-    </div>
-  );
-}
-
 export default function MembersTableSkeleton() {
   return (
-    <>
-      <style>{`@keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }`}</style>
-      <div style={{ position: "relative", zIndex: 10 }}>
-        <div style={cx}>
-          <div style={{ marginBottom: "2rem", display: "flex", justifyContent: "space-between", alignItems: "flex-end" }}>
-            <div>
-              <Shimmer height="10px" width="100px" style={{ marginBottom: "0.75rem" }} />
-              <Shimmer height="42px" width="200px" />
-            </div>
-            <Shimmer height="38px" width="120px" />
-          </div>
-          <div style={{ display: "grid", gridTemplateColumns: "1fr auto auto", gap: "0.75rem", marginBottom: "1.5rem" }}>
-            <Shimmer height="40px" />
-            <Shimmer height="40px" width="120px" />
-            <Shimmer height="40px" width="120px" />
-          </div>
-          <div style={{ border: "1px solid rgba(255,255,255,0.07)" }}>
-            <div style={{ padding: "0.75rem 1rem", borderBottom: "1px solid rgba(255,255,255,0.07)", background: "rgba(255,255,255,0.02)" }}>
-              <Shimmer height="10px" width="60%" />
-            </div>
-            {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} style={{ padding: "0.85rem 1rem", borderBottom: "1px solid rgba(255,255,255,0.04)", display: "grid", gridTemplateColumns: "2fr 1.5fr 1fr 1fr 0.8fr", gap: "1rem", alignItems: "center" }}>
-                <div>
-                  <Shimmer height="14px" width="140px" style={{ marginBottom: "6px" }} />
-                  <Shimmer height="10px" width="80px" />
-                </div>
-                <Shimmer height="11px" width="90%" />
-                <Shimmer height="11px" width="60%" />
-                <Shimmer height="18px" width="70px" />
-                <Shimmer height="11px" width="50px" />
-              </div>
-            ))}
-          </div>
+    <div className="relative z-10 p-6 md:p-12 max-w-7xl mx-auto">
+      {/* Header */}
+      <div className="mb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+        <div>
+          <div className="h-3 w-24 bg-zinc-200 dark:bg-zinc-800 rounded animate-pulse mb-3" />
+          <div className="h-10 md:h-12 w-48 bg-zinc-200 dark:bg-zinc-800 rounded-lg animate-pulse" />
+        </div>
+        <div className="h-12 w-36 bg-zinc-200 dark:bg-zinc-800 rounded-lg animate-pulse" />
+      </div>
+
+      {/* Controls */}
+      <div className="flex flex-col md:flex-row gap-4 mb-6">
+        <div className="h-11 flex-1 bg-zinc-200 dark:bg-zinc-800 rounded-lg animate-pulse" />
+        <div className="flex gap-4">
+          <div className="h-11 w-32 bg-zinc-200 dark:bg-zinc-800 rounded-lg animate-pulse" />
+          <div className="h-11 w-32 bg-zinc-200 dark:bg-zinc-800 rounded-lg animate-pulse" />
         </div>
       </div>
-    </>
+
+      {/* Results count */}
+      <div className="h-3 w-24 bg-zinc-200 dark:bg-zinc-800 rounded animate-pulse mb-4" />
+
+      {/* Table */}
+      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden shadow-sm dark:shadow-none mb-6">
+        {/* Table header */}
+        <div className="hidden md:grid grid-cols-[2fr_1.5fr_1fr_1fr_0.8fr] gap-4 p-4 border-b border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-950/50">
+          <div className="h-2 w-1/2 bg-zinc-200 dark:bg-zinc-800 rounded animate-pulse" />
+        </div>
+
+        {/* Rows */}
+        <div className="divide-y divide-zinc-100 dark:divide-zinc-800/50">
+          {Array.from({ length: 8 }).map((_, i) => (
+            <div key={i} className="w-full grid grid-cols-1 md:grid-cols-[2fr_1.5fr_1fr_1fr_0.8fr] gap-2 md:gap-4 p-4 md:items-center">
+              <div>
+                <div className="h-4 w-32 bg-zinc-200 dark:bg-zinc-800 rounded animate-pulse mb-2" />
+                <div className="h-2 w-20 bg-zinc-200 dark:bg-zinc-800 rounded animate-pulse" />
+              </div>
+              <div className="hidden md:block h-3 w-40 bg-zinc-200 dark:bg-zinc-800 rounded animate-pulse" />
+              <div className="hidden md:block h-3 w-24 bg-zinc-200 dark:bg-zinc-800 rounded animate-pulse" />
+              <div className="hidden md:block h-5 w-16 bg-zinc-200 dark:bg-zinc-800 rounded-full animate-pulse" />
+              <div className="hidden md:block h-3 w-16 bg-zinc-200 dark:bg-zinc-800 rounded animate-pulse" />
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
   );
 }
